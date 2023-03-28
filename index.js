@@ -10,8 +10,7 @@ function autenticacaoNoOAuth(){
     const webServer = iniciarServidor()
     const OAthClient = criarOAthCliente()
     requisitarConsentimento()
-    redirecionarCallback()
-    requisitarAcessoAoToken()
+    const token = requisitarAcessoAoToken()
     definirAutenticacaoGlobal()
     encerrarServidor()
 }
@@ -29,36 +28,52 @@ function iniciarServidor(){
         })
     })
 }
- //teste de conexação com yahoo
-/*app.route('/signin').get((req,res) => {
-    let url = "https://api.login.yahoo.com/oauth2/request_auth?client_id=dj0yJmk9SjlLWVd3Qk9pQ3V3JmQ9WVdrOU1USk9UelZDVTFFbWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWYw&redirect_uri=https://localhost:8080/&response_type=code&scope=openid"
-    res.redirect(url)
-})*/
+function chamadaHtml(){
+    app.get('/login', function(req,res){
+        res.sendFile(__dirname + '/src/tela.html')
+    })
+    app.get('/oauth2callback', function (req,res){
+        res.sendFile(__dirname + '/src/callback.html')
+    })
+}
 function requisitarConsentimento(){
-    passport.use(new YahooStrategy),{
-        consumerKey: dj0yJmk9SjlLWVd3Qk9pQ3V3JmQ9WVdrOU1USk9UelZDVTFFbWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWYw,
-        consumerSecret: dc4422416f9b878e0c71d07a1173eea40d091ed1,
-        callbackURL: "https://localhost:8080/oauth2callback"
-    }
-    
-    app.get('/auth/yahoo', 
-    passport.authenticate('yahoo'));
-    
-    app.get('/oauth2callback',
-        passport.authenticate('yahoo', {failureRedirect: '/'}),
-            function(req,res)  
-            {res.redirect('/oauth2callback')})
-    
+    app.get('/signin',(request,response) => {
+        
+        let url =
+        "https://api.login.yahoo.com/oauth2/request_auth_fe?client_id=dj0yJmk9SjlLWVd3Qk9pQ3V3JmQ9WVdrOU1USk9UelZDVTFFbWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWYw&response_type=code&redirect_uri=https://www.datapriority.com.br/";
+        response.redirect(url);
+    });
 }
-function ensureAuthenticated(req,res,next){
-    if(req.isAuthenticated()){
-        return next()
-    }
-    res.redirect('/')
+function requisitarAcessoAoToken(){
+    var dashboard_response = {};
+app.get('/dashboard',(req,res) => {
+    let authCode = req.query.code;
+    let url = 'https://api.login.yahoo.com/oauth2/get_token';
+    let requestBody = {
+        client_id :
+            'dj0yJmk9SjlLWVd3Qk9pQ3V3JmQ9WVdrOU1USk9UelZDVTFFbWNHbzlNQT09JnM9Y29uc3VtZXJzZWNyZXQmc3Y9MCZ4PWYw',
+        client_secret :
+            'dc4422416f9b878e0c71d07a1173eea40d091ed1',
+        redirect_uri : 'https://www.datapriority.com.br/',
+        code : authCode,
+        grant_type : 'authorization_code'
+    };
+    let data =
+        Object.keys(requestBody).map(key=>encodeURIComponent(key) + '=' + encodeURIComponent(requestBody[key])).join('&');
+    fetch(url, {
+        method: 'post',
+        headers: {
+            'Content-Type':'application/x-www-form-urlencoded'
+        },
+        body: data
+    }).then(function (response) {
+        dashboard_response=response.json();
+        return response.json();
+    });
+});
 }
-app.get('/oauth2callback', ensureAuthenticated, (req,res) => {
-    res.send('bem vindo')
-})
 
-
-
+iniciarServidor()
+chamadaHtml()
+requisitarConsentimento()
+requisitarAcessoAoToken()
